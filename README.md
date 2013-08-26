@@ -1,6 +1,6 @@
 # lita-travis
 
-[![Build Status](https://travis-ci.org/jimmycuadra/lita-travis.png)](https://travis-ci.org/jimmycuadra/lita-travis)
+[![Build Status](https://travis-ci.org/jimmycuadra/lita-travis.png?branch=master)](https://travis-ci.org/jimmycuadra/lita-travis)
 [![Code Climate](https://codeclimate.com/github/jimmycuadra/lita-travis.png)](https://codeclimate.com/github/jimmycuadra/lita-travis)
 [![Coverage Status](https://coveralls.io/repos/jimmycuadra/lita-travis/badge.png)](https://coveralls.io/r/jimmycuadra/lita-travis)
 
