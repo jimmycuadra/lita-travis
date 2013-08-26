@@ -12,4 +12,108 @@ describe Lita::Handlers::Travis, lita_handler: true do
       expect(Lita.config.handlers.travis.repos).to eq({})
     end
   end
+
+  describe "#receive" do
+    let(:request) { double("Rack::Request") }
+    let(:response) { Rack::Response.new }
+
+    let(:valid_env) do
+      env = double("Hash")
+      allow(env).to receive(:[]).with("Authorization").and_return(
+        Digest::SHA256.new.digest("foo/barabc123")
+      )
+      env
+    end
+
+    let(:invalid_env) do
+      env = double("Hash")
+      allow(env).to receive(:[]).with("Authorization").and_return("garbage")
+      env
+    end
+
+    let(:valid_payload) do
+      <<-JSON.chomp
+{
+  "payload": {
+    "status_message": "Passed",
+    "commit": "abcdefg",
+    "compare_url": "https://example.com/",
+    "repository": {
+      "name": "bar",
+      "owner_name": "foo"
+    }
+  }
+}
+      JSON
+    end
+
+    context "happy path" do
+      before do
+        Lita.config.handlers.travis.token = "abc123"
+        Lita.config.handlers.travis.repos["foo/bar"] = "#baz"
+        allow(request).to receive(:env).and_return(valid_env)
+        allow(request).to receive(:body).and_return(valid_payload)
+      end
+
+      it "sends a notification message to the applicable rooms" do
+        expect(robot).to receive(:send_message) do |target, message|
+          expect(target.room).to eq("#baz")
+          expect(message).to include("[Travis CI]")
+        end
+        subject.receive(request, response)
+      end
+    end
+
+    context "with a missing token" do
+      before do
+        Lita.config.handlers.travis.repos["foo/bar"] = "#baz"
+        allow(request).to receive(:env).and_return(valid_env)
+        allow(request).to receive(:body).and_return(valid_payload)
+      end
+
+      it "logs a warning that the token is not set" do
+        expect(Lita.logger).to receive(:warn) do |warning|
+          expect(warning).to include("token is not set")
+        end
+        subject.receive(request, response)
+      end
+    end
+
+    context "with an invalid authorization header" do
+      before do
+        Lita.config.handlers.travis.token = "abc123"
+        Lita.config.handlers.travis.repos["foo/bar"] = "#baz"
+        allow(request).to receive(:env).and_return(invalid_env)
+        allow(request).to receive(:body).and_return(valid_payload)
+      end
+
+      it "logs a warning that the request was invalid" do
+        expect(Lita.logger).to receive(:warn) do |warning|
+          expect(warning).to include("did not pass authentication")
+        end
+        subject.receive(request, response)
+      end
+    end
+
+    context "without setting a value for the repo in config.repos" do
+      before do
+        Lita.config.handlers.travis.token = "abc123"
+        allow(request).to receive(:env).and_return(valid_env)
+        allow(request).to receive(:body).and_return(valid_payload)
+      end
+
+      it "logs a warning that the request was invalid" do
+        expect(Lita.logger).to receive(:warn) do |warning|
+          expect(warning).to include("unconfigured project")
+        end
+        subject.receive(request, response)
+      end
+    end
+
+    it "logs an error if the payload cannot be parsed" do
+      allow(request).to receive(:body).and_return("not json")
+      expect(Lita.logger).to receive(:error)
+      subject.receive(request, response)
+    end
+  end
 end
