@@ -44,8 +44,10 @@ Set the configuration attributes as described in the section above, and add the 
 notifications:
   webhooks:
     urls:
-      - http://your.lita.instance.example.com/travis
+      - http://example.com/travis
 ```
+
+Replace "example.com" with the hostname where your instance of Lita is running.
 
 See Travis CI's [documentation on notifications](http://about.travis-ci.org/docs/user/notifications/) for additional options.
 
