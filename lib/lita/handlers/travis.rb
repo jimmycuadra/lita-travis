@@ -1,4 +1,5 @@
 require "digest"
+require "uri"
 
 require "lita"
 
@@ -24,7 +25,7 @@ module Lita
 
       def extract_payload(body)
         begin
-          payload = MultiJson.load(body)
+          payload = MultiJson.load(URI.unescape(body.sub(/^payload=/, "")))
           payload["payload"] if payload.key?("payload")
         rescue MultiJson::LoadError => e
           Lita.logger.error(
