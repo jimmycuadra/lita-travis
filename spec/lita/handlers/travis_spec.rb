@@ -27,7 +27,7 @@ describe Lita::Handlers::Travis, lita_handler: true do
     let(:valid_env) do
       env = double("Hash")
       allow(env).to receive(:[]).with("HTTP_AUTHORIZATION").and_return(
-        Digest::SHA256.new.digest("foo/barabc123")
+        Digest::SHA2.hexdigest("foo/barabc123")
       )
       env
     end

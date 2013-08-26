@@ -74,13 +74,9 @@ Lita.config.handlers.token is not set.
           return
         end
 
-        expected_hash = Digest::SHA256.new.digest("#{repo}#{token}")
-
-        unless expected_hash == auth_hash
+        unless Digest::SHA2.hexdigest("#{repo}#{token}") == auth_hash
           Lita.logger.warn <<-WARNING.chomp
 Notification from Travis CI did not pass authentication.
-Expected: #{expected_hash.inspect}
-Actual: #{auth_hash.inspect}
           WARNING
           return
         end
