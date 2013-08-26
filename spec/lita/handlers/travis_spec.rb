@@ -14,12 +14,19 @@ describe Lita::Handlers::Travis, lita_handler: true do
   end
 
   describe "#receive" do
-    let(:request) { double("Rack::Request") }
+    let(:request) do
+      request = double("Rack::Request")
+      allow(request).to receive(:params).and_return(params)
+      request
+    end
+
     let(:response) { Rack::Response.new }
+
+    let(:params) { double("Hash") }
 
     let(:valid_env) do
       env = double("Hash")
-      allow(env).to receive(:[]).with("Authorization").and_return(
+      allow(env).to receive(:[]).with("HTTP_AUTHORIZATION").and_return(
         Digest::SHA256.new.digest("foo/barabc123")
       )
       env
@@ -27,21 +34,19 @@ describe Lita::Handlers::Travis, lita_handler: true do
 
     let(:invalid_env) do
       env = double("Hash")
-      allow(env).to receive(:[]).with("Authorization").and_return("garbage")
+      allow(env).to receive(:[]).with("HTTP_AUTHORIZATION").and_return("foo")
       env
     end
 
     let(:valid_payload) do
       <<-JSON.chomp
 {
-  "payload": {
-    "status_message": "Passed",
-    "commit": "abcdefg",
-    "compare_url": "https://example.com/",
-    "repository": {
-      "name": "bar",
-      "owner_name": "foo"
-    }
+  "status_message": "Passed",
+  "commit": "abcdefg",
+  "compare_url": "https://example.com/",
+  "repository": {
+    "name": "bar",
+    "owner_name": "foo"
   }
 }
       JSON
@@ -52,7 +57,7 @@ describe Lita::Handlers::Travis, lita_handler: true do
         Lita.config.handlers.travis.token = "abc123"
         Lita.config.handlers.travis.repos["foo/bar"] = "#baz"
         allow(request).to receive(:env).and_return(valid_env)
-        allow(request).to receive(:body).and_return(valid_payload)
+        allow(params).to receive(:[]).with("payload").and_return(valid_payload)
       end
 
       it "sends a notification message to the applicable rooms" do
@@ -68,7 +73,7 @@ describe Lita::Handlers::Travis, lita_handler: true do
       before do
         Lita.config.handlers.travis.repos["foo/bar"] = "#baz"
         allow(request).to receive(:env).and_return(valid_env)
-        allow(request).to receive(:body).and_return(valid_payload)
+        allow(params).to receive(:[]).with("payload").and_return(valid_payload)
       end
 
       it "logs a warning that the token is not set" do
@@ -84,7 +89,7 @@ describe Lita::Handlers::Travis, lita_handler: true do
         Lita.config.handlers.travis.token = "abc123"
         Lita.config.handlers.travis.repos["foo/bar"] = "#baz"
         allow(request).to receive(:env).and_return(invalid_env)
-        allow(request).to receive(:body).and_return(valid_payload)
+        allow(params).to receive(:[]).with("payload").and_return(valid_payload)
       end
 
       it "logs a warning that the request was invalid" do
@@ -99,7 +104,7 @@ describe Lita::Handlers::Travis, lita_handler: true do
       before do
         Lita.config.handlers.travis.token = "abc123"
         allow(request).to receive(:env).and_return(valid_env)
-        allow(request).to receive(:body).and_return(valid_payload)
+        allow(params).to receive(:[]).with("payload").and_return(valid_payload)
       end
 
       it "logs a warning that the request was invalid" do
@@ -111,7 +116,7 @@ describe Lita::Handlers::Travis, lita_handler: true do
     end
 
     it "logs an error if the payload cannot be parsed" do
-      allow(request).to receive(:body).and_return("not json")
+      allow(params).to receive(:[]).with("payload").and_return("not json")
       expect(Lita.logger).to receive(:error)
       subject.receive(request, response)
     end

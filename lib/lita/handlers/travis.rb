@@ -1,5 +1,4 @@
 require "digest"
-require "uri"
 
 require "lita"
 
@@ -15,18 +14,17 @@ module Lita
       http.post "/travis", :receive
 
       def receive(request, response)
-        payload = extract_payload(request.body) or return
-        repo = get_repo(payload)
-        validate_repo(repo, request.env["Authorization"]) or return
-        notify_rooms(repo, payload)
+        data = parse_payload(request.params["payload"]) or return
+        repo = get_repo(data)
+        validate_repo(repo, request.env["HTTP_AUTHORIZATION"]) or return
+        notify_rooms(repo, data)
       end
 
       private
 
-      def extract_payload(body)
+      def parse_payload(json)
         begin
-          payload = MultiJson.load(URI.unescape(body.sub(/^payload=/, "")))
-          payload["payload"] if payload.key?("payload")
+          MultiJson.load(json)
         rescue MultiJson::LoadError => e
           Lita.logger.error(
             "Could not parse JSON payload from Travis CI: #{e.message}"
@@ -39,11 +37,11 @@ module Lita
         "#{pl["repository"]["owner_name"]}/#{pl["repository"]["name"]}"
       end
 
-      def notify_rooms(repo, payload)
+      def notify_rooms(repo, data)
         rooms = rooms_for_repo(repo) or return
         message = <<-MSG.chomp
-[Travis CI] #{repo}: #{payload["status_message"]} at #{payload["commit"]} \
-- #{payload["compare_url"]}
+[Travis CI] #{repo}: #{data["status_message"]} at #{data["commit"]} \
+- #{data["compare_url"]}
         MSG
 
         rooms.each do |room|
@@ -76,9 +74,13 @@ Lita.config.handlers.token is not set.
           return
         end
 
-        unless auth_hash == Digest::SHA256.new.digest("#{repo}#{token}")
+        expected_hash = Digest::SHA256.new.digest("#{repo}#{token}")
+
+        unless expected_hash == auth_hash
           Lita.logger.warn <<-WARNING.chomp
 Notification from Travis CI did not pass authentication.
+Expected: #{expected_hash.inspect}
+Actual: #{auth_hash.inspect}
           WARNING
           return
         end
