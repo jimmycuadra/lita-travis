@@ -42,7 +42,9 @@ describe Lita::Handlers::Travis, lita_handler: true do
       <<-JSON.chomp
 {
   "status_message": "Passed",
+  "branch": "master",
   "commit": "abcdefg",
+  "committer_name": "Bongo",
   "compare_url": "https://example.com/",
   "repository": {
     "name": "bar",

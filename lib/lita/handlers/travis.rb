@@ -40,7 +40,8 @@ module Lita
       def notify_rooms(repo, data)
         rooms = rooms_for_repo(repo) or return
         message = <<-MSG.chomp
-[Travis CI] #{repo}: #{data["status_message"]} at #{data["commit"]} \
+[Travis CI] #{repo}: #{data["status_message"]} at \
+#{data["commit"][0...7]} (#{data["branch"]}) by #{data["committer_name"]} \
 - #{data["compare_url"]}
         MSG
 
