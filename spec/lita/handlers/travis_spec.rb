@@ -126,9 +126,9 @@ describe Lita::Handlers::Travis, lita_handler: true do
         allow(params).to receive(:[]).with("payload").and_return(valid_payload)
       end
 
-      it "logs a warning that the request was invalid" do
+      it "logs a warning that the request was ignored" do
         expect(Lita.logger).to receive(:warn) do |warning|
-          expect(warning).to include("unconfigured project")
+          expect(warning).to include("ignored because no rooms were specified")
         end
         subject.receive(request, response)
       end

@@ -27,9 +27,7 @@ module Lita
         begin
           MultiJson.load(json)
         rescue MultiJson::LoadError => e
-          Lita.logger.error(
-            "Could not parse JSON payload from Travis CI: #{e.message}"
-          )
+          Lita.logger.error(t("parse_error", message: e.message))
           return
         end
       end
@@ -40,11 +38,16 @@ module Lita
 
       def notify_rooms(repo, data)
         rooms = rooms_for_repo(repo) or return
-        message = <<-MSG.chomp
-[Travis CI] #{repo}: #{data["status_message"]} at \
-#{data["commit"][0...7]} (#{data["branch"]}) by #{data["committer_name"]} \
-- #{data["compare_url"]}
-        MSG
+
+        message = t(
+          "message",
+          repo: repo,
+          status_message: data["status_message"],
+          commit: data["commit"][0...7],
+          branch: data["branch"],
+          committer_name: data["committer_name"],
+          compare_url: data["compare_url"]
+        )
 
         rooms.each do |room|
           target = Source.new(room: room)
@@ -61,9 +64,7 @@ module Lita
         elsif default_rooms
           Array(default_rooms)
         else
-          Lita.logger.warn <<-WARNING.chomp
-Notification from Travis CI for unconfigured project: #{repo}
-WARNING
+          Lita.logger.warn(t("no_room_configured"), repo: repo)
           return
         end
       end
@@ -72,17 +73,12 @@ WARNING
         token = Lita.config.handlers.travis.token
 
         unless token
-          Lita.logger.warn <<-WARNING.chomp
-Notification from Travis CI could not be validated because \
-Lita.config.handlers.token is not set.
-          WARNING
+          Lita.logger.warn(t("no_token"))
           return
         end
 
         unless Digest::SHA2.hexdigest("#{repo}#{token}") == auth_hash
-          Lita.logger.warn <<-WARNING.chomp
-Notification from Travis CI did not pass authentication.
-          WARNING
+          Lita.logger.warn(t("auth_failed"), repo: repo)
           return
         end
 
@@ -93,3 +89,7 @@ Notification from Travis CI did not pass authentication.
     Lita.register_handler(Travis)
   end
 end
+
+Lita.load_locales Dir[File.expand_path(
+  File.join("..", "..", "..", "..", "locales", "*.yml"), __FILE__
+)]
