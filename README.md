@@ -22,7 +22,8 @@ gem "lita-travis"
 
 ### Optional attributes
 
-* `repos` (Hash) - A map of repositories to allow notifications for and the chat rooms to post them in. The keys should be strings in the format "github_username/repository_name" and the values should be either a string room name or an array of string room names. Default: `{}`.
+* `repos` (Hash) - A hash of repositories names and the chat rooms to post their notifications in. The keys should be strings in the format "github_username/repository_name" and the values should be either a string room name or an array of string room names. Default: `{}`.
+* `default_rooms` (String, Array&lt;String&gt;) - A string room name or an array of string room names where notifications for repositories not explicitly specified in the `repos` hash should be sent. If `nil`, notifications for unknown repositories will be ignored. Default: `nil`.
 
 ### Example
 
@@ -30,9 +31,10 @@ gem "lita-travis"
 Lita.configure do |config|
   config.handlers.travis.token = "abcdefg123"
   config.handlers.travis.repos = {
-    "username/repo1" => "#someroom",
-    "username/repo2" => ["#someroom", "#someotherroom"]
+    "username/repo1" => "#repo1_team",
+    "username/repo2" => ["#repo2_team", "#other_team"]
   }
+  config.handlers.travis.default_rooms = "#engineering"
 end
 ```
 
