@@ -9,6 +9,7 @@ module Lita
       def self.default_config(config)
         config.token = nil
         config.repos = {}
+        config.default_rooms = nil
       end
 
       http.post "/travis", :receive
@@ -53,9 +54,12 @@ module Lita
 
       def rooms_for_repo(repo)
         rooms = Lita.config.handlers.travis.repos[repo]
+        default_rooms = Lita.config.handlers.travis.default_rooms
 
         if rooms
           Array(rooms)
+        elsif default_rooms
+          Array(default_rooms)
         else
           Lita.logger.warn <<-WARNING.chomp
 Notification from Travis CI for unconfigured project: #{repo}

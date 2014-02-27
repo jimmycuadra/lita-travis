@@ -102,7 +102,24 @@ describe Lita::Handlers::Travis, lita_handler: true do
       end
     end
 
-    context "without setting a value for the repo in config.repos" do
+    context "with only config.default_rooms set" do
+      before do
+        Lita.config.handlers.travis.token = "abc123"
+        Lita.config.handlers.travis.default_rooms = "#default"
+        allow(request).to receive(:env).and_return(valid_env)
+        allow(params).to receive(:[]).with("payload").and_return(valid_payload)
+      end
+
+      it "sends a notification message to the applicable rooms" do
+        expect(robot).to receive(:send_message) do |target, message|
+          expect(target.room).to eq("#default")
+          expect(message).to include("[Travis CI]")
+        end
+        subject.receive(request, response)
+      end
+    end
+
+    context "without setting a value for the repo in config.repos and no default" do
       before do
         Lita.config.handlers.travis.token = "abc123"
         allow(request).to receive(:env).and_return(valid_env)
