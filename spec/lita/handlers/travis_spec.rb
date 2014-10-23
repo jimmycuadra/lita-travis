@@ -1,17 +1,7 @@
 require "spec_helper"
 
 describe Lita::Handlers::Travis, lita_handler: true do
-  it { routes_http(:post, "/travis").to(:receive) }
-
-  describe ".default_config" do
-    it "sets token to nil" do
-      expect(Lita.config.handlers.travis.token).to be_nil
-    end
-
-    it "sets repos to an empty hash" do
-      expect(Lita.config.handlers.travis.repos).to eq({})
-    end
-  end
+  it { is_expected.to route_http(:post, "/travis").to(:receive) }
 
   describe "#receive" do
     let(:request) do
@@ -54,10 +44,14 @@ describe Lita::Handlers::Travis, lita_handler: true do
       JSON
     end
 
+    before do
+      registry.config.handlers.travis.repos = {}
+    end
+
     context "happy path" do
       before do
-        Lita.config.handlers.travis.token = "abc123"
-        Lita.config.handlers.travis.repos["foo/bar"] = "#baz"
+        registry.config.handlers.travis.token = "abc123"
+        registry.config.handlers.travis.repos["foo/bar"] = "#baz"
         allow(request).to receive(:env).and_return(valid_env)
         allow(params).to receive(:[]).with("payload").and_return(valid_payload)
       end
@@ -71,25 +65,10 @@ describe Lita::Handlers::Travis, lita_handler: true do
       end
     end
 
-    context "with a missing token" do
-      before do
-        Lita.config.handlers.travis.repos["foo/bar"] = "#baz"
-        allow(request).to receive(:env).and_return(valid_env)
-        allow(params).to receive(:[]).with("payload").and_return(valid_payload)
-      end
-
-      it "logs a warning that the token is not set" do
-        expect(Lita.logger).to receive(:warn) do |warning|
-          expect(warning).to include("token is not set")
-        end
-        subject.receive(request, response)
-      end
-    end
-
     context "with an invalid authorization header" do
       before do
-        Lita.config.handlers.travis.token = "abc123"
-        Lita.config.handlers.travis.repos["foo/bar"] = "#baz"
+        registry.config.handlers.travis.token = "abc123"
+        registry.config.handlers.travis.repos["foo/bar"] = "#baz"
         allow(request).to receive(:env).and_return(invalid_env)
         allow(params).to receive(:[]).with("payload").and_return(valid_payload)
       end
@@ -104,8 +83,8 @@ describe Lita::Handlers::Travis, lita_handler: true do
 
     context "with only config.default_rooms set" do
       before do
-        Lita.config.handlers.travis.token = "abc123"
-        Lita.config.handlers.travis.default_rooms = "#default"
+        registry.config.handlers.travis.token = "abc123"
+        registry.config.handlers.travis.default_rooms = "#default"
         allow(request).to receive(:env).and_return(valid_env)
         allow(params).to receive(:[]).with("payload").and_return(valid_payload)
       end
@@ -121,7 +100,8 @@ describe Lita::Handlers::Travis, lita_handler: true do
 
     context "without setting a value for the repo in config.repos and no default" do
       before do
-        Lita.config.handlers.travis.token = "abc123"
+        registry.config.handlers.travis.token = "abc123"
+        allow(registry.config.handlers.travis).to receive(:default_rooms).and_return(nil)
         allow(request).to receive(:env).and_return(valid_env)
         allow(params).to receive(:[]).with("payload").and_return(valid_payload)
       end

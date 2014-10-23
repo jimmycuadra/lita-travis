@@ -6,11 +6,9 @@ module Lita
   module Handlers
     # Provides Travis CI webhooks for Lita.
     class Travis < Handler
-      def self.default_config(config)
-        config.token = nil
-        config.repos = {}
-        config.default_rooms = nil
-      end
+      config :token, type: String, required: true
+      config :repos, type: Hash, default: {}
+      config :default_rooms, type: [Array, String]
 
       http.post "/travis", :receive
 
@@ -56,8 +54,8 @@ module Lita
       end
 
       def rooms_for_repo(repo)
-        rooms = Lita.config.handlers.travis.repos[repo]
-        default_rooms = Lita.config.handlers.travis.default_rooms
+        rooms = config.repos[repo]
+        default_rooms = config.default_rooms
 
         if rooms
           Array(rooms)
@@ -70,14 +68,7 @@ module Lita
       end
 
       def validate_repo(repo, auth_hash)
-        token = Lita.config.handlers.travis.token
-
-        unless token
-          Lita.logger.warn(t("no_token"))
-          return
-        end
-
-        unless Digest::SHA2.hexdigest("#{repo}#{token}") == auth_hash
+        unless Digest::SHA2.hexdigest("#{repo}#{config.token}") == auth_hash
           Lita.logger.warn(t("auth_failed"), repo: repo)
           return
         end

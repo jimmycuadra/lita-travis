@@ -10,6 +10,3 @@ en:
         no_room_configured: >-
           Notification from Travis CI for %{repo} ignored because no rooms were specified in the
           config.repos hash, and no default rooms were specified in config.default_rooms.
-        no_token: >-
-          Notification from Travis CI could not be validated because Lita.config.handlers.token
-          is not set.
