@@ -6,7 +6,7 @@ en:
         parse_error: "Could not parse JSON payload from Travis CI: %{message}"
         message: >-
           [Travis CI] %{repo}: %{status_message} at %{commit} (%{branch}) by
-          %{committer_name} - %{compare_url}"
+          %{committer_name} - %{compare_url}
         no_room_configured: >-
           Notification from Travis CI for %{repo} ignored because no rooms were specified in the
           config.repos hash, and no default rooms were specified in config.default_rooms.
