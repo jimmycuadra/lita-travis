@@ -9,6 +9,7 @@ module Lita
       config :token, type: String, required: true
       config :repos, type: Hash, default: {}
       config :default_rooms, type: [Array, String]
+      config :branch, type: String
 
       http.post "/travis", :receive
 
@@ -16,7 +17,14 @@ module Lita
         data = parse_payload(request.params["payload"]) or return
         repo = get_repo(data)
         validate_repo(repo, request.env["HTTP_AUTHORIZATION"]) or return
-        notify_rooms(repo, data)
+        case config.branch
+        when nil
+          notify_rooms(repo, data)
+        when -> (branch) { branch == data['branch'] }
+          notify_rooms(repo, data)
+        else
+          Lita.logger.info("Skipping notification for branch #{data['branch']}")
+        end
       end
 
       private
