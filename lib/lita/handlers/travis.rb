@@ -33,7 +33,7 @@ module Lita
         begin
           MultiJson.load(json)
         rescue MultiJson::LoadError => e
-          Lita.logger.error(t("parse_error", message: e.message))
+          Lita.logger.error("parse_error, message: #{e.message}")
           return
         end
       end
@@ -70,14 +70,14 @@ module Lita
         elsif default_rooms
           Array(default_rooms)
         else
-          Lita.logger.warn(t("no_room_configured"), repo: repo)
+          Lita.logger.warn("no_room_configured: ignored because no rooms were specified")
           return
         end
       end
 
       def validate_repo(repo, auth_hash)
         unless Digest::SHA2.hexdigest("#{repo}#{config.token}") == auth_hash
-          Lita.logger.warn(t("auth_failed"), repo: repo)
+          Lita.logger.warn("auth_failed: did not pass authentication")
           return
         end
 
