@@ -44,6 +44,22 @@ describe Lita::Handlers::Travis, lita_handler: true do
       JSON
     end
 
+    let(:different_branch_payload) do
+      <<-JSON.chomp
+{
+  "status_message": "Passed",
+  "branch": "staging",
+  "commit": "abcdefg",
+  "committer_name": "Bongo",
+  "compare_url": "https://example.com/",
+  "repository": {
+    "name": "bar",
+    "owner_name": "foo"
+  }
+}
+      JSON
+    end
+
     before do
       registry.config.handlers.travis.repos = {}
     end
@@ -92,6 +108,29 @@ describe Lita::Handlers::Travis, lita_handler: true do
       it "sends a notification message to the applicable rooms" do
         expect(robot).to receive(:send_message) do |target, message|
           expect(target.room).to eq("#default")
+          expect(message).to include("[Travis CI]")
+        end
+        subject.receive(request, response)
+      end
+    end
+    context "branch config set" do
+      before do
+        registry.config.handlers.travis.branch = "master"
+        allow(request).to receive(:env).and_return(valid_env)
+      end
+
+      it "doesn't send notifications for branches that don't match the config" do
+        allow(params).to receive(:[]).with("payload")
+                          .and_return(different_branch_payload)
+        expect(robot).not_to receive(:send_message)
+        expect(Lita.logger).to receive(:info)
+        subject.receive(request, response)
+      end
+
+      it "only sends notifications for branches that match the config" do
+        allow(params).to receive(:[]).with("payload")
+                          .and_return(valid_payload)
+        expect(robot).to receive(:send_message) do |target, message|
           expect(message).to include("[Travis CI]")
         end
         subject.receive(request, response)
